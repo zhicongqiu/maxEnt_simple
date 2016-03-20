@@ -1,7 +1,7 @@
-function [ERROR, SPARSITY] = semi_learning(data_raw,data_GT,...
+function [ERROR, TARGETS, SPARSITY] = semi_learning(data_raw,data_GT,...
 						  test_raw,test_GT,...
 						  normal_class,num_train,mode)
-%unction [ERROR SPARSITY] = ...
+%function [ERROR SPARSITY] = ...
 %        semi_learning(data_raw,data_GT,...
 %		       test_raw,test_GT,...
 %		       normal_class,...
@@ -10,18 +10,21 @@ function [ERROR, SPARSITY] = semi_learning(data_raw,data_GT,...
 %training data, N samples and K features in raw space, labels, 
 %test data in raw space, labels
 %first num_train samples are used as labeled samples
+%the rest are treated as unlabeled
+%transduction result: 
+%put test set same as unlabeled samples in training set
 %mode:
-%0:MLE regularization 
+%0:MLE regularization
 %1:L2 regularization 
 %2: proposed maxEnt regularizer 
-%3: min_ent regularizer without L2 (-1*maxEnt), not to be confused
-%with Bengio's min ent reg
 %output:
 %ERROR metrics
+%TARGETS: final target distributions for unlabeled samples
+%SPARSITY: learned parameters
 
 %make sure there is the specified mode
-if ~ismember(mode,[0 1 2 3])
-   error('please specify modes: 0, 1, 2 or 3')
+if ~ismember(mode,[0 1 2])
+   error('please specify modes: 0, 1, 2')
 end
 %make sure train and test has the same input dimension
 if size(data_raw,2)~=size(test_raw,2)
@@ -71,6 +74,7 @@ for i=1:length(normal_class)
 end
     
 a_u = 0.2;
+%to use cross-validation, uncomment the block below:
 %{
 a_u = DoCV(data_raw,K_O,data_GTT,label,...
 	   active_set_normal,true,...
@@ -84,7 +88,7 @@ disp(a_u);
 
 
 %0:MLE regularization or 1:L2 regularization or 2:proposed model or 3: min_ent 
-[ParamN] = ...
+[ParamN TARGETS] = ...
 gradDes(data_raw,data_GTT,label,a_u,ParamN,...
 	active_set_normal,mode);
 

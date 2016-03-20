@@ -2,14 +2,6 @@ function Fs_multiclass = getF_multiclass(data,GTT,label,Param,active_set)
 
 N = size(data,1);
 
-for i=length(active_set):-1:1
-    if active_set(i)==1
-        last_label = i;
-        break;
-    end
-end
-
-temp = find(active_set==1);
 Fs_multiclass = zeros(N,length(active_set));
 for i=1:N
     sum = 1;
