@@ -2,22 +2,25 @@ function [RESULTS, TARGETS] = semi_learning(data_raw,data_GT,...
 					    test_raw,test_GT,...
 					    normal_class,num_train,...
 					    mode,weighted,DoCV)
-%function [RESULTS,TARGETS] = ...
-%        semi_learning(data_raw,data_GT,...
-%		       test_raw,test_GT,...
-%		       normal_class,...
-%		       num_train,mode)
+
+%function [RESULTS, TARGETS] = semi_learning(data_raw,data_GT,...
+%					    test_raw,test_GT,...
+%					    normal_class,num_train,...
+%					    mode,weighted,DoCV)
 %input: 
-%training data, N samples and K features in raw space, labels, 
-%test data in raw space, labels
-%first num_train samples are used as labeled samples
-%the rest are treated as unlabeled
-%transduction result: 
+%training data, N samples and K features, 
+%training data labels, 
+%test data, 
+%test data labels
+%first num_train samples are used as labeled training samples
+%the rest are treated as unlabeled samples
+%transductive learning: 
 %put test set same as unlabeled samples in training set
+%generalization performance is measured in test set
 %mode:
-%0:MLE regularization
-%1:L2 regularization 
-%2: proposed maxEnt regularizer 
+%0: MLE regularization
+%1: L2 regularization 
+%2: proposed joint maxEnt regularizer 
 %3: TNNLS'16
 %weighted: 
 %set to 1 if we need to balance the labeled samples
@@ -100,8 +103,10 @@ if DoCV
   a_u = DoCV(data_raw,K_O,data_GTT,label,...
 	     active_set_normal,true,...
 	     mode);
-else
+elseif weighted
   a_u = 0.5;
+else
+  a_u = num_train/(N-num_train);
 end
 
 fprintf('w_u = %f, a_u = %f\n',w_u,a_u);
@@ -110,7 +115,7 @@ fprintf('w_u = %f, a_u = %f\n',w_u,a_u);
 gradDes(data_raw,data_GTT,label,a_u,ParamN,...
 	active_set_normal,WT,w_u,mode);
 
-%test PMF based on current parameters
+%test PMF based on learned parameters
 [test_PMFnormal] = ...
 getTestPMF(test_raw,test_GTT,ParamN,...
 	   active_set_normal);
@@ -118,8 +123,9 @@ getTestPMF(test_raw,test_GTT,ParamN,...
 %error rate on test set
 [classification_error, error_avgC] = ...
 calculate_error(test_PMFnormal,test_GTT,0);
-disp(error_avgC);
+fprintf('average error per class: %f.\n',error_avgC);
 
+%return results
 RESULTS.ParamN = ParamN(active_set_normal==1);
 RESULTS.active_set_normal = active_set_normal;
 RESULTS.it = it;
