@@ -1,10 +1,10 @@
-function [ParamN_old,TARGETS] = ...
+function [count_step ParamN_old,TARGETS] = ...
          gradDes(data_raw,data_GTT,label,a_u,...
-		 ParamN_old,active_set_normal,mode)
+		 ParamN_old,active_set_normal,WT,w_u,mode)
 
 %initial step size and tolerance level
-step_size = 1e-3;
-reltol = 1e-6;
+step_size = 1e-2;
+reltol = 1e-3;
 
 %initialize inter-normal parameters
 num_active_normal = sum(active_set_normal);
@@ -37,7 +37,7 @@ TARGETS = 1/num_active_normal*ones(num_unlabeled,length(active_set_normal));
 %calculate initial objective function value
 Dold =  ObjF_meta(TARGETS,Fs_multiclassN,L2,...
 		  data_GTT_tempN,label_tempN,...
-		  label,active_set_normal,...
+		  label,active_set_normal,WT,w_u,...
 		  a_u,mode);
 %disp(Dold);
 Dnew = inf;
@@ -66,14 +66,14 @@ while abs(Dnew-Dold)>=reltol||Dnew>Dold||isinf(Dold)
             get_Dbeta(ones(size(data_tempN,1),1),TARGETS,Fs_multiclassN,...
 		     ParamN_old(tempN(i)).beta0,data_GTT_tempN,...
 		     label_tempN,tempN(i),active_set_normal,...
-		     num_active_normal,a_u,mode);
+		     WT,w_u,num_active_normal,a_u,mode);
            temp_normal = temp_normal+Dbeta0N(i)^2;
            for j=1:size(data_raw,2)
              DbetaN(i,j) = ...
              get_Dbeta(data_tempN(:,j),TARGETS,Fs_multiclassN,...
 		       ParamN_old(tempN(i)).beta(j),data_GTT_tempN,...
 		       label_tempN,tempN(i),active_set_normal,...
-		       num_active_normal,a_u,mode);
+		       WT,w_u,num_active_normal,a_u,mode);
            end
            temp_normal = temp_normal+norm(DbetaN(i,:))^2;
          end
@@ -104,39 +104,45 @@ while abs(Dnew-Dold)>=reltol||Dnew>Dold||isinf(Dold)
     Dnew = ...
     ObjF_meta(TARGETS,Fs_multiclassN,L2,data_GTT_tempN,...
 	      label_tempN,label,...
-	      active_set_normal,a_u,mode);
+	      active_set_normal,WT,w_u,a_u,mode);
 
     if Dnew<Dold
         updated = true;
+	fprintf('update parameters...\n');
 	%reset step size
         mu = step_size;
         if num_active_normal>=2
             ParamN_old = ParamN_new;
         end
 	%%
-	%update targets
-	Fs_multiclassU = Fs_multiclassN(label_tempN==2,:);
-	data_GTT_tempU = data_GTT(label==2,:);
-	for i=1:size(Fs_multiclassU,1)
-	  lowest_KL = Inf;
-	  lowest_target = 1/num_active_normal*ones(1,num_active_normal);
-	  [~,temp_I] = sort(Fs_multiclassU(i,:));
-	  for j=1:num_active_normal
-	    temp_target = zeros(1,length(active_set_normal));
-	    %assign uniform target
-	    for k=1:j
-	      temp_target(temp_I(k)) = 1/j;
+	if mode ==2
+	  %update targets
+	  Fs_multiclassU = Fs_multiclassN(label_tempN==2,:);
+	  data_GTT_tempU = data_GTT(label==2,:);
+	  for i=1:size(Fs_multiclassU,1)
+	    lowest_KL = Inf;
+	    lowest_target = 1/num_active_normal...
+			    *ones(1,length(active_set_normal));
+	    [~,temp_I] = sort(Fs_multiclassU(i,:),'descend');
+	    for j=1:num_active_normal
+	      temp_target = zeros(1,length(active_set_normal));
+	      %assign uniform target
+	      for k=1:j
+		temp_target(temp_I(k)) = 1/j;
+	      end
+	      temp_KL = get_KL(temp_target,temp_I(1:j),Fs_multiclassU(i,:));
+	      %fprintf('tempKL is %f \n',temp_KL);
+	      %get the lowest KL target
+	      if temp_KL<lowest_KL
+		%disp('using the loop...');
+		lowest_KL = temp_KL;
+		lowest_target = temp_target;
+	      end
 	    end
-	    temp_KL = get_KL(temp_target,temp_I(1:j),Fs_multiclassU(i,:));
-	    %get the lowest KL target
-	    if temp_KL<lowest_KL
-	       lowest_KL = temp_KL;
-	       lowest_target = temp_target;
-	    end
+	    %assign the target distribution which reduces the objective
+	    %the most
+	    TARGETS(i,:) = lowest_target;
 	  end
-	  %assign the target distribution which reduces the objective
-	  %the most
-	  TARGETS(i,:) = lowest_target;
 	end
 	%%
     else

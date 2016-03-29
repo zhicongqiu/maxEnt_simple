@@ -1,7 +1,7 @@
 function Fs_multiclass = getF_multiclass(data,GTT,label,Param,active_set)
 
 N = size(data,1);
-
+temp = find(active_set==1);
 Fs_multiclass = zeros(N,length(active_set));
 for i=1:N
     sum = 1;

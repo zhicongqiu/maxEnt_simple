@@ -1,7 +1,7 @@
 function D = ...
 	 ObjF_meta(TARGETS,Fs_multiclassN,L2,...
 		   data_GTT_N,label_N,label,...
-		   active_set_normal,...
+		   active_set_normal,WT,w_u,...
 		   a_u,mode)
 
 sumN = 0; sum2N = 0;
@@ -13,7 +13,7 @@ if num_normal>=2
     temp = Fs_multiclassN(label_N~=2,:);
     data_GTT_N = data_GTT_N(label_N~=2,:);
     for i=1:size(temp,1)
-        sumN = sumN - log(temp(i,data_GTT_N(i,1)));
+        sumN = sumN - WT(data_GTT_N(i,1))*log(temp(i,data_GTT_N(i,1)));
     end
     Fn_U = Fs_multiclassN(label_N==2,:);
     tempN = find(active_set_normal==1);
@@ -35,7 +35,7 @@ if mode==2||mode==3
 end             
 
 if mode~=1
-  D = (1-a_u)*(sumN)+a_u*sum2N;
+  D = (1-a_u)*(sumN)+a_u*w_u*sum2N;
 else
   D = (1-a_u)*(sumN)+a_u*L2;
 end
