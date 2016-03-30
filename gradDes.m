@@ -4,7 +4,7 @@ function [count_step ParamN_old,TARGETS] = ...
 
 %initial step size and tolerance level
 step_size = 1e-2;
-reltol = 1e-4;
+reltol = 1e-3;
 
 %initialize parameters
 num_active_normal = sum(active_set_normal);
