@@ -8,12 +8,12 @@ sumN = 0; sum2N = 0;
 
 num_normal = sum(active_set_normal==1);
 %inter-normal sum
-temp = Fs_multiclassN(label_N~=2,:);
-data_GTT_N = data_GTT_N(label_N~=2,:);
+temp = Fs_multiclassN(label~=2,:);
+data_GTT_N = data_GTT_N(label~=2,:);
 for i=1:size(temp,1)
   sumN = sumN - WT(data_GTT_N(i,1))*log(temp(i,data_GTT_N(i,1)));
 end
-Fn_U = Fs_multiclassN(label_N==2,:);
+Fn_U = Fs_multiclassN(label==2,:);
 tempN = find(active_set_normal==1);
 
 
