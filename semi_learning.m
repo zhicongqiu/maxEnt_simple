@@ -59,7 +59,7 @@ label = 2*ones(N,1); %2 is unlabeled, 0 is labeled normal
 
 
 %ground-truth transformation, 1st column indicates its Param index; 
-%2nd column indicates if it is normal (0)
+%2nd column indicates if it is labeled (0) or unlabeled (2)
 data_GTT = transform_GT(data_GT,normal_class);
 test_GTT = transform_GT(test_GT,normal_class);
 
@@ -93,20 +93,20 @@ end
 RESULTS = struct;
 ParamN = struct;
 for i=1:length(normal_class)    
+  %unbiased initialization
   ParamN(i).beta = 1e-6*ones(1,K_O);
   ParamN(i).beta0 = 0;
 end
     
-%a_u = 0.02;
 if DoCV
   disp('activate CV to choose a_u');
   a_u = DoCV(data_raw,K_O,data_GTT,label,...
-	     active_set_normal,true,...
+	     active_set_normal,WT_w_u,true,...
 	     mode);
 elseif weighted
   a_u = 0.5;
 else
-  a_u = num_train/(N-num_train);
+  a_u = num_train/N;
 end
 
 fprintf('w_u = %f, a_u = %f\n',w_u,a_u);

@@ -1,5 +1,5 @@
 function [a_u] = DoCV(data_raw,N_O,data_GTT,...
-		      label,active_set_normal,...
+		      label,active_set_normal,WT,w_u,...
 		      reinitialize,mode)
 
 start = 0.9;
@@ -8,7 +8,7 @@ ParamN = struct;
 %10-fold CV
 nr_fold = 10;
 
-if sum(active_set_normal)==0 %no suspicious sample, choose a_u=0.1
+if sum(active_set_normal)<=1 %cannot do CV, return small a_u
     a_u = 0.1;
     return;
 else
@@ -63,7 +63,7 @@ else
           %active set redefined
           active_set_normalT = zeros(length(active_set_normal),1);
           if sum(active_set_normal)>=2               
-            for k=1:size(trainCV_raw,1)
+            for k=1:size(trainCV_raw,1)-size(unlabeled_raw,1)
               if trainCV_label(k)==0&&active_set_normalT(trainCV_GTT(k,1))==0
                 active_set_normalT(trainCV_GTT(k,1)) = 1;
               end
@@ -73,7 +73,7 @@ else
           %gradient descend for training fold
           [ParamN] = ...
           gradDes(trainCV_raw,trainCV_GTT,trainCV_label,...
-		  i,ParamN,active_set_normalT,mode);
+		  i,ParamN,active_set_normalT,WT,w_u,mode);
           %use classification error, unweighted or weighted???
           [test_PMFnormal] = ...
 	  getTestPMF(testCV_raw,testCV_GTT,...
